@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,maximum-scale=2">
+    <link rel="stylesheet" type="text/css" media="screen" href="/dotnet-tor/assets/css/style.css?v=460bc0a076298d45eddef586f55f75f07cb77b10">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>dotnet-tor | A .NET cross-platform CLI app that uses TorSharp to run a local proxy</title>
+<meta name="generator" content="Jekyll v3.9.0" />
+<meta property="og:title" content="dotnet-tor" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="A .NET cross-platform CLI app that uses TorSharp to run a local proxy" />
+<meta property="og:description" content="A .NET cross-platform CLI app that uses TorSharp to run a local proxy" />
+<meta property="og:site_name" content="dotnet-tor" />
+<script type="application/ld+json">
+{"@type":"WebSite","headline":"dotnet-tor","url":"/dotnet-tor/","description":"A .NET cross-platform CLI app that uses TorSharp to run a local proxy","name":"dotnet-tor","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/devlooped/dotnet-tor">View on GitHub</a>
+
+          <h1 id="project_title">dotnet-tor</h1>
+          <h2 id="project_tagline">A .NET cross-platform CLI app that uses TorSharp to run a local proxy</h2>
+
+          
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1 id="-dotnet-tor"><img src="https://raw.githubusercontent.com/devlooped/dotnet-tor/main/assets/img/icon-32.png" alt="Icon" /> dotnet-tor</h1>
+
+<p><a href="https://www.nuget.org/packages/dotnet-tor"><img src="https://img.shields.io/nuget/v/dotnet-tor.svg?color=royalblue" alt="Version" /></a> <a href="https://www.nuget.org/packages/dotnet-tor"><img src="https://img.shields.io/nuget/dt/dotnet-tor.svg?color=darkmagenta" alt="Downloads" /></a> <a href="https://github.com/devlooped/dotnet-tor/blob/main/LICENSE"><img src="https://img.shields.io/github/license/devlooped/dotnet-tor.svg?color=blue" alt="License" /></a></p>
+
+<p>Installing or updating (same command can be used for both):</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dotnet tool update -g dotnet-tor
+</code></pre></div></div>
+
+<!-- #content -->
+<p>Usage:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; dotnet tor -?
+tor
+  Tor proxy service
+
+Usage:
+  tor [options] [command]
+
+Options:
+  -p, --proxy &lt;proxy&gt;      Proxy port [default: 1337]
+  -s, --socks &lt;socks&gt;      Socks port [default: 1338]
+  -c, --control &lt;control&gt;  Control port [default: 1339]
+  --version                Show version information
+  -?, -h, --help           Show help and usage information
+
+Commands:
+  add &lt;name&gt; &lt;service&gt;  Adds a service to register on the Tor network
+  config                Edits the full torrc configuration file.
+</code></pre></div></div>
+
+<p>The program will automatically check for updates once a day and recommend updating 
+if there is a new version available.</p>
+
+<p>Configured services are persisted in the global <a href="https://dotnetconfig.org">dotnet-config</a> file at <code class="language-plaintext highlighter-rouge">%userprofile%\tor\.netconfig</code>, and on first run (after configuration), their <code class="language-plaintext highlighter-rouge">.onion</code> address and keys will be available in a sub-directory alongside the <code class="language-plaintext highlighter-rouge">.netconfig</code>. This allows the tool to self-update while preserving all configurations and services.</p>
+
+<h3 id="exposing-local-http-apis-via-tor">Exposing local HTTP APIs via Tor</h3>
+
+<p>After installation, you might want to expose an .NET Core HTTP service from local port 7071 over the Tor network on port 80. 
+You could configure the service with:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; dotnet tor add api 127.0.0.1:7071 -p 80
+</code></pre></div></div>
+
+<p>Then start the Tor proxy normally with:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; dotnet tor
+</code></pre></div></div>
+
+<p>There will now be a <code class="language-plaintext highlighter-rouge">%userprofile%\tor\.netconfig\api\hostname</code> file with the .onion address for the service, like <code class="language-plaintext highlighter-rouge">2gzyxa5ihm7nsggfxnu52rck2vv4rvmdlkiu3zzui5du4xyclen53wid.onion</code>. You can now reach web API endpoints natively via a .NET 6 client with:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Net</span><span class="p">;</span>
+<span class="k">using</span> <span class="nn">System.Net.Http</span><span class="p">;</span>
+
+<span class="kt">var</span> <span class="n">http</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">HttpClient</span><span class="p">(</span><span class="k">new</span> <span class="n">HttpClientHandler</span>
+<span class="p">{</span>
+    <span class="n">Proxy</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">WebProxy</span><span class="p">(</span><span class="s">"socks5://127.0.0.1:1338"</span><span class="p">)</span>
+<span class="p">});</span>
+
+<span class="kt">var</span> <span class="n">response</span> <span class="p">=</span> <span class="k">await</span> <span class="n">http</span><span class="p">.</span><span class="nf">GetAsync</span><span class="p">(</span><span class="s">"http://2gzyxa5ihm7nsggfxnu52rck2vv4rvmdlkiu3zzui5du4xyclen53wid.onion/[endpoint]"</span><span class="p">));</span>
+</code></pre></div></div>
+
+<p>The client can just use another <code class="language-plaintext highlighter-rouge">dotnet-tor</code> proxy running locally with default configuration values and things will Just Work™ and 
+properly reach the destination service running anywhere in the world :).</p>
+
+<p>You can even expose the local HTTPS endpoint instead. In this case, the client would need to perform custom validation 
+(or entirely bypass it) of the certificate, but otherwise, things work as-is too.</p>
+
+<p>Service-side:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&gt; dotnet tor add api 127.0.0.1:5001 -p 443
+</code></pre></div></div>
+
+<p>Note that since we’re exposing the service over the default port for SSL, we don’t need to specify the port in the client:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">var</span> <span class="n">http</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">HttpClient</span><span class="p">(</span><span class="k">new</span> <span class="n">HttpClientHandler</span>
+<span class="p">{</span>
+    <span class="n">ClientCertificateOptions</span> <span class="p">=</span> <span class="n">ClientCertificateOption</span><span class="p">.</span><span class="n">Manual</span><span class="p">,</span>
+    <span class="n">ServerCertificateCustomValidationCallback</span> <span class="p">=</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="p">=&gt;</span> <span class="k">true</span><span class="p">,</span>
+    <span class="n">Proxy</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">WebProxy</span><span class="p">(</span><span class="s">"socks5://127.0.0.1:1338"</span><span class="p">),</span>
+<span class="p">});</span>
+
+<span class="kt">var</span> <span class="n">response</span> <span class="p">=</span> <span class="k">await</span> <span class="n">http</span><span class="p">.</span><span class="nf">SendAsync</span><span class="p">(</span><span class="k">new</span> <span class="nf">HttpRequestMessage</span><span class="p">(</span><span class="n">HttpMethod</span><span class="p">.</span><span class="n">Get</span><span class="p">,</span> <span class="s">"https://kbu3mvegpytu4gewdgvjae7zhrzszmetmr5jdlwk5ct5pfzlbaqbdqqd.onion"</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">Content</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">StringContent</span><span class="p">(</span><span class="s">"Hello World!"</span><span class="p">)</span>
+<span class="p">});</span>
+
+<span class="n">response</span><span class="p">.</span><span class="nf">EnsureSuccessStatusCode</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p>You can play around with a trivial echo service by installing the <a href="https://nuget.org/packages/dotnet-echo">dotnet-echo</a> tool 
+and exposing it over the Tor network.</p>
+
+<!-- #content -->
+
+<h2 id="dogfooding">Dogfooding</h2>
+
+<p><a href="https://pkg.kzu.io/index.json"><img src="https://img.shields.io/endpoint?url=https://shields.kzu.io/vpre/dotnet-tor/main&amp;label=nuget.ci&amp;color=brightgreen" alt="CI Version" /></a> <a href="https://github.com/devlooped/dotnet-tor/actions"><img src="https://github.com/devlooped/dotnet-tor/workflows/build/badge.svg?branch=main" alt="Build" /></a></p>
+
+<p>We also produce CI packages from branches and pull requests so you can dogfood builds as quickly as they are produced.</p>
+
+<p>The CI feed is <code class="language-plaintext highlighter-rouge">https://pkg.kzu.io/index.json</code>.</p>
+
+<p>The versioning scheme for packages is:</p>
+
+<ul>
+  <li>PR builds: <em>42.42.42-pr</em><code class="language-plaintext highlighter-rouge">[NUMBER]</code></li>
+  <li>Branch builds: <em>42.42.42-</em><code class="language-plaintext highlighter-rouge">[BRANCH]</code>.<code class="language-plaintext highlighter-rouge">[COMMITS]</code></li>
+</ul>
+
+<!-- include https://github.com/devlooped/sponsors/raw/main/footer.md -->
+
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        
+        <p class="copyright">dotnet-tor maintained by <a href="https://github.com/devlooped">devlooped</a></p>
+        
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+  </body>
+</html>
